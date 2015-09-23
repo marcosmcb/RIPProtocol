@@ -1,5 +1,4 @@
 package com.ufscar.labRedes.rip;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -41,21 +40,37 @@ public class Node2 extends Thread {
     }
 
     public static void initializeServer() {
-        //lock.lock();
+        lock.lock();
         new Thread() {
             public void run() {
                 try {
                     while (true) {
                         Socket listener = server.accept();
+                        
                         Node2 node2 = new Node2(listener);
                         node2.start();
+                        
+                        /*
+                        listener = server.accept();
+                        Node1 node1 = new Node1(listener);
+                        node1.start();
+
+                        listener = server.accept();
+                        Node0 node0 = new Node0(listener);
+                        node0.start();
+
+                        listener = server.accept();
+                        Node3 node3 = new Node3(listener);
+                        node3.start();
+                        */
+                    
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }.start();
-        //lock.unlock();
+        lock.unlock();
     }
 
 
@@ -96,6 +111,8 @@ public class Node2 extends Thread {
     private void toLayer2() {
         try {
             
+            Thread.sleep(3000);
+
             Socket node0 = new Socket("localhost", 8001);
             ObjectOutputStream outNode0 = new ObjectOutputStream(node0.getOutputStream());
             
@@ -109,10 +126,9 @@ public class Node2 extends Thread {
             outNode1.writeObject(new Package(idNode,1,distanceMatrix[idNode]));
             outNode3.writeObject(new Package(idNode,3,distanceMatrix[idNode]));
 
-         }
-        
-        catch (IOException ex) {
-           
+        }catch (IOException ex) {
+        }catch (InterruptedException ex) {
+            Logger.getLogger(Node2.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -121,12 +137,16 @@ public class Node2 extends Thread {
         int port = Integer.parseInt("800" +  (nodePackage.getDestinationID()+1) );
       
         try {
+                Thread.sleep(3000);
+
                 Socket forwardNode = new Socket("localhost", port);
                 ObjectOutputStream outNode = new ObjectOutputStream(forwardNode.getOutputStream());
 
                 outNode.writeObject(nodePackage);
                 
         }catch (IOException ex) {
+        }catch (InterruptedException ex) {
+            Logger.getLogger(Node2.class.getName()).log(Level.SEVERE, null, ex);
         }
         
         

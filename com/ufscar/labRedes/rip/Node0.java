@@ -1,5 +1,4 @@
 package com.ufscar.labRedes.rip;
-
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.locks.ReentrantLock;
@@ -17,7 +16,7 @@ import java.util.logging.Logger;
  */
 public class Node0 extends Thread{
     
-    private static ReentrantLock lock;
+    private static ReentrantLock lock = new ReentrantLock();
     private final int idNode = 0;
     private final int numNodes = 4;
     private final int infinity = 999;
@@ -32,31 +31,49 @@ public class Node0 extends Thread{
     /*Constructor for the class along with a call for the initialization method */
     public Node0( Socket client ) {
         this.node = client;
-        nodeInitialize();
     }
     
     /*Setting up our server*/
     public static void createServer() throws IOException {
+        System.out.println("Server will be created");
         server = new ServerSocket(8001);
     }
     
     /*Finally, We initialize it */
     public static void initializeServer() {
-        //lock.lock();
+        lock.lock();
         new Thread() {
             @Override
             public void run() {
                 try{
                     while(true){
+                        System.out.println("Server will be initialized");
                         Socket listener = server.accept();
+                        
                         Node0 node0 = new Node0(listener);
                         node0.start();
+                        
+                        /*
+                        listener = server.accept();
+                        Node1 node1 = new Node1(listener);
+                        node1.start();
+
+                        listener = server.accept();
+                        Node2 node2 = new Node2(listener);
+                        node2.start();
+
+                        listener = server.accept();
+                        Node3 node3 = new Node3(listener);
+                        node3.start();
+                        */
+                        
                     }
                 } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         }.start();
-        //lock.unlock();
+        lock.unlock();
     }
     
     /*
@@ -67,6 +84,8 @@ public class Node0 extends Thread{
     */
     public void nodeInitialize (){
         
+        System.out.println("NODE will be INITIALIZED");
+
         this.distanceMatrix[0][0] = 0;
         this.distanceMatrix[0][1] = 1;
         this.distanceMatrix[0][2] = 3;
@@ -86,6 +105,8 @@ public class Node0 extends Thread{
     */
     private void toLayer2() {
         try {
+
+            Thread.sleep(3000);
             
             Socket node1 = new Socket("localhost", 8002);
             ObjectOutputStream outNode1 = new ObjectOutputStream(node1.getOutputStream());
@@ -101,6 +122,8 @@ public class Node0 extends Thread{
             outNode3.writeObject(new Package(idNode,3,distanceMatrix[idNode]));
 
         }catch (IOException ex) {
+        }catch (InterruptedException ex) {
+            Logger.getLogger(Node0.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
@@ -116,12 +139,16 @@ public class Node0 extends Thread{
         int port = Integer.parseInt("800" +  (nodePackage.getDestinationID()+1) );
       
         try {
+                Thread.sleep(3000);
+
                 Socket forwardNode = new Socket("localhost", port);
                 ObjectOutputStream outNode = new ObjectOutputStream(forwardNode.getOutputStream());
 
                 outNode.writeObject(nodePackage);
                 
         }catch (IOException ex) {
+        }catch (InterruptedException ex) {
+            Logger.getLogger(Node0.class.getName()).log(Level.SEVERE, null, ex);
         }    
     }
     
@@ -181,7 +208,10 @@ public class Node0 extends Thread{
     
     
     public static void main(String[] args) throws IOException {
+
+        System.out.println("Started...");
         createServer();
+        System.out.println("Initialize Server has been called");
         initializeServer();
     }
 
