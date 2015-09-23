@@ -2,6 +2,7 @@ package com.ufscar.labRedes.rip;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.locks.ReentrantLock;
@@ -40,27 +41,21 @@ public class Node2 extends Thread {
     }
 
     public static void initializeServer() {
-        lock.lock();
+        //lock.lock();
         new Thread() {
             public void run() {
                 try {
                     while (true) {
                         Socket listener = server.accept();
-                        Node0 node0 = new Node0(listener);
-                        node0.start();
-                        listener = server.accept();
-                        Node1 node1 = new Node1(listener);
-                        node1.start();
-                        listener = server.accept();
-                        Node3 node3 = new Node3(listener);
-                        node3.start();
+                        Node2 node2 = new Node2(listener);
+                        node2.start();
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }.start();
-        lock.unlock();
+        //lock.unlock();
     }
 
 
@@ -93,8 +88,48 @@ public class Node2 extends Thread {
         this.distanceMatrix[0][2] = 3;
         this.distanceMatrix[1][2] = 1;
         this.distanceMatrix[3][2] = 2;
+        
+        toLayer2();
 
     }
+    
+    private void toLayer2() {
+        try {
+            
+            Socket node0 = new Socket("localhost", 8001);
+            ObjectOutputStream outNode0 = new ObjectOutputStream(node0.getOutputStream());
+            
+            Socket node1 = new Socket("localhost", 8002);
+            ObjectOutputStream outNode1 = new ObjectOutputStream(node1.getOutputStream());
+            
+            Socket node3 = new Socket("localhost", 8004);
+            ObjectOutputStream outNode3 = new ObjectOutputStream(node3.getOutputStream());
+        
+            outNode0.writeObject(new Package(idNode,0,distanceMatrix[idNode]));
+            outNode1.writeObject(new Package(idNode,1,distanceMatrix[idNode]));
+            outNode3.writeObject(new Package(idNode,3,distanceMatrix[idNode]));
+
+         }
+        
+        catch (IOException ex) {
+           
+        }
+    }
+
+    private void printDistancesNode(){
+        
+        //System.out.println("Matrix de distâncias do Nó 2");
+
+        for(int i=0; i < numNodes; i++){
+            System.out.println("Nó"+i+" Vetor de distância ");
+            for(int j=0; j < numNodes; j++)
+                System.out.print(distanceMatrix[i][j] + "\t");
+
+        }
+    }
+
+    
+    
     
     /*
     This is the method which calculates the distance between our "main" node, in this
@@ -110,14 +145,15 @@ public class Node2 extends Thread {
 
         if (nodePackage.getDestinationID() != idNode) {
             /* If we are not the receiver, we relay the packet */
-            toLayer2(nodePackage);
+            toLayer2();
             return;
         }
 
         sourceDistances = nodePackage.getMinCostArr();
         
         
-        /*Here is where the Bellman-Ford equation is trully applied, 
+        /*
+          Here is where the Bellman-Ford equation is trully applied, 
           We firstly get the distance from our node to the source node, to calculate the minimun cost,
           and if it happens to have changed, we update our own distance matrix.
         */
@@ -130,6 +166,7 @@ public class Node2 extends Thread {
                 updateDistances++;
 
                 distanceMatrix[idNode][nodePackage.getSourceID()] = newDistance;
+                distanceMatrix[nodePackage.getSourceID()][idNode] = newDistance;
             }
 
         }
@@ -141,7 +178,7 @@ public class Node2 extends Thread {
         */
 
         if (updateDistances > 0) {
-            //toLayer2();
+            toLayer2();
             printDistancesNode();
         }
 
@@ -151,14 +188,6 @@ public class Node2 extends Thread {
     public static void main(String[] args) throws IOException {
         createServer();
         initializeServer();
-    }
-
-    private void toLayer2(Package node0Package) {
-        /*TODO*/
-    }
-
-    private void printDistancesNode() {
-        /*TODO*/
     }
 
 
