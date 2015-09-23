@@ -5,18 +5,19 @@
  */
 package com.ufscar.labRedes.rip;
 
-import java.io.Serializable;
+import java.io.*;
 
 /**
+ *
  * @author marcoscavalcante
  */
-public class Package implements Serializable {
-
+public class Package implements Serializable{
+    
     private int sourceID;
     private int destinationID;
     private int[] minCostArr;
 
-
+    
     public Package(int sourceID, int destinationID, int[] distancesM) {
         this.sourceID = sourceID;
         this.destinationID = destinationID;
@@ -34,5 +35,5 @@ public class Package implements Serializable {
     public int[] getMinCostArr() {
         return minCostArr;
     }
-
+    
 }

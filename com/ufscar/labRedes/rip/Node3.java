@@ -113,13 +113,30 @@ public class Node3 extends Thread {
            
         }
     }
+    
+    
+    private void forwardPackage(Package nodePackage) throws IOException{
+        
+        int port = Integer.parseInt("800" +  (nodePackage.getDestinationID()+1) );
+      
+        try {
+                Socket forwardNode = new Socket("localhost", port);
+                ObjectOutputStream outNode = new ObjectOutputStream(forwardNode.getOutputStream());
+
+                outNode.writeObject(nodePackage);
+                
+        }catch (IOException ex) {
+        }
+        
+        
+    }
 
     private void printDistancesNode(){
         
         //System.out.println("Matrix de distâncias do Nó 3");
        
         for(int i=0; i < numNodes; i++){
-            System.out.println("Nó"+i+" Vetor de distância ");
+            System.out.println("Node"+i+" Distance Vector ");
             for(int j=0; j < numNodes; j++)
                 System.out.print(distanceMatrix[i][j] + "\t");
             
@@ -133,7 +150,7 @@ public class Node3 extends Thread {
     
     */
 
-    public void nodeUpdate(Package nodePackage) {
+    public void nodeUpdate(Package nodePackage) throws IOException {
 
         int updateDistances = 0;
         int[] sourceDistances;
@@ -141,15 +158,14 @@ public class Node3 extends Thread {
 
         if (nodePackage.getDestinationID() != idNode) {
             /* If we are not the receiver, we relay the packet */
-            toLayer2();
+            forwardPackage(nodePackage);
             return;
         }
 
         sourceDistances = nodePackage.getMinCostArr();
         
         
-        /*
-          Here is where the Bellman-Ford equation is trully applied, 
+        /*Here is where the Bellman-Ford equation is trully applied, 
           We firstly get the distance from our node to the source node, to calculate the minimun cost,
           and if it happens to have changed, we update our own distance matrix.
         */
@@ -161,17 +177,14 @@ public class Node3 extends Thread {
                 updateDistances++;
                 distanceMatrix[idNode][nodePackage.getSourceID()] = newDistance;
                 distanceMatrix[nodePackage.getSourceID()][idNode] = newDistance;
-
             }
 
         }
         
-        
         /*
           In case our variable, updateDistances, has been incremented, 
-          We must send out our distanceVector to every other node
+          We must send out our distanceVector to every other node.
         */
-
         if (updateDistances > 0) {
             toLayer2();
             printDistancesNode();

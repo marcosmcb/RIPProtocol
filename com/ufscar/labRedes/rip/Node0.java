@@ -29,16 +29,18 @@ public class Node0 extends Thread{
     private final Socket node;
     
     
-    
+    /*Constructor for the class along with a call for the initialization method */
     public Node0( Socket client ) {
         this.node = client;
         nodeInitialize();
     }
     
+    /*Setting up our server*/
     public static void createServer() throws IOException {
         server = new ServerSocket(8001);
     }
     
+    /*Finally, We initialize it */
     public static void initializeServer() {
         //lock.lock();
         new Thread() {
@@ -60,7 +62,8 @@ public class Node0 extends Thread{
     /*
     This is basically the method which initializes the distanceMatrix. 
     Some distances are hardcoded because they were given. 
-    I reckon that is not the best to do that, so, feel free to change it. 
+    I reckon that is not the best to do that, so, feel free to change it.
+    There is a call for the method toLayer2().
     */
     public void nodeInitialize (){
         
@@ -77,9 +80,12 @@ public class Node0 extends Thread{
         
     }
     
-    
+    /*
+    It is by using this method that we broadcast our distanceVector to ther nodes 
+    which are adjacent to us.
+    */
     private void toLayer2() {
-         try {
+        try {
             
             Socket node1 = new Socket("localhost", 8002);
             ObjectOutputStream outNode1 = new ObjectOutputStream(node1.getOutputStream());
@@ -94,45 +100,58 @@ public class Node0 extends Thread{
             outNode2.writeObject(new Package(idNode,2,distanceMatrix[idNode]));
             outNode3.writeObject(new Package(idNode,3,distanceMatrix[idNode]));
 
-         }
-        
-        catch (IOException ex) {
-           
+        }catch (IOException ex) {
         }
     }
     
-    private void printDistancesNode(){
-        
+    /*
+    In case we receive a packet that is not us the receiver,
+    We must forward them to the destiny node.
+    */
+    private void forwardPackage(Package nodePackage) throws IOException{
+        /* 
+        We use this little hack to make use of the port numbers, which are in sequence, so we just need to 
+        concatenate the number "800" with the (destinationID + 1).
+        */
+        int port = Integer.parseInt("800" +  (nodePackage.getDestinationID()+1) );
+      
+        try {
+                Socket forwardNode = new Socket("localhost", port);
+                ObjectOutputStream outNode = new ObjectOutputStream(forwardNode.getOutputStream());
+
+                outNode.writeObject(nodePackage);
+                
+        }catch (IOException ex) {
+        }    
+    }
+    
+    /*  This is the method by which we print out the distanceMatrix   */
+    private void printDistancesNode(){        
         //System.out.println("Matrix de distâncias do Nó 0");
        
         for(int i=0; i < numNodes; i++){
-            System.out.println("Nó"+i+" Vetor de distância ");
+            System.out.println("Node"+i+" Distance Vector ");
             for(int j=0; j < numNodes; j++)
                 System.out.print(distanceMatrix[i][j] + "\t");
-            
         }
     }
     
     /*
     This is the method which calculates the distance between our "main" node, in this
     case, node 0, and the other nodes. We use the Bellman-Ford equation to do so.
-    
     */
-    
-    public void nodeUpdate (Package nodePackage){
+    public void nodeUpdate (Package nodePackage) throws IOException{
 
         int updateDistances = 0;
         int[] sourceDistances;
         
-        
+        /* If we are not the receiver, we relay the packet */
         if(nodePackage.getDestinationID() != idNode){
-            /* If we are not the receiver, we relay the packet */
-            toLayer2(); 
+            forwardPackage(nodePackage); 
             return ;
         }
         
         sourceDistances = nodePackage.getMinCostArr();
-        
         
         /*
           Here is where the Bellman-Ford equation is trully applied, 
@@ -143,26 +162,21 @@ public class Node0 extends Thread{
             
             int newDistance = distanceMatrix[idNode][nodePackage.getSourceID()] + sourceDistances[i];
             
-            if(newDistance < distanceMatrix[nodePackage.getSourceID()][i]){
-                
+            if(newDistance < distanceMatrix[nodePackage.getSourceID()][i]){    
                 updateDistances++;
                 distanceMatrix[idNode][nodePackage.getSourceID()] = newDistance;
                 distanceMatrix[nodePackage.getSourceID()][idNode] = newDistance;
-                
             }
-            
         }
         
         /*
           In case our variable, updateDistances, has been incremented, 
           We must send out our distanceVector to every other node
         */
-        
         if(updateDistances > 0){
             toLayer2();
             printDistancesNode();
         }
-  
     }
     
     
@@ -177,8 +191,7 @@ public class Node0 extends Thread{
             ObjectInputStream inputNode = new ObjectInputStream(node.getInputStream());
             Package nodePackage = (Package) inputNode.readObject();
             
-            nodeUpdate(nodePackage);
-            
+            nodeUpdate(nodePackage); /*  Call the method to update our distance Matrix   */
             
         }catch ( IOException e ) {
             e.printStackTrace();
